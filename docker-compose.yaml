@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/myapp
+      - GOOGLE_CLIENT_ID=<id>
+      - GOOGLE_CLIENT_SECRET=<secret>
+      - GOOGLE_REDIRECT_URI=<callback uri>
+      - RUST_LOG=info
+    depends_on:
+      - db
+    volumes:
+      - .:/usr/src/app
+      - cargo_cache:/usr/local/cargo/registry
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+  cargo_cache:
