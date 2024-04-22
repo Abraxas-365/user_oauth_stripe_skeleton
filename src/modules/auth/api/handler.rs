@@ -18,10 +18,7 @@ pub async fn oauth_callback(
     println!("Handling OAuth callback...");
     if let Some(code) = query.get("code") {
         match oauth_manager.handle_oauth_callback(code.to_string()).await {
-            Ok(token) => {
-                println!("TokenAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA: {:?}", token);
-                HttpResponse::Ok().json(token)
-            }
+            Ok(token) => HttpResponse::Ok().json(token),
             Err(e) => {
                 println!("Error: {:?}", e);
                 HttpResponse::Unauthorized().finish()

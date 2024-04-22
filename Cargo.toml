@@ -20,3 +20,5 @@ chrono = "0.4.38"
 jsonwebtoken = "7"
 oauth2 = { version = "4", features = ["reqwest"], default-features = false }
 reqwest = { version = "0.11", features = ["json"] }  
+futures = "0.3.30"
+actix-web-lab = "0.20.2"
