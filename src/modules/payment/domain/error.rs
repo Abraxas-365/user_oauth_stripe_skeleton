@@ -12,4 +12,3 @@ pub enum PaymentError {
     #[error("Invalid payment status: {0}")]
     InvalidPaymentStatus(String),
 }
-

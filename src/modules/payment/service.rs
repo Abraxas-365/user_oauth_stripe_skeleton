@@ -21,7 +21,7 @@ impl Service {
 
     pub async fn payment_status(&self, user_id: i32) -> Result<PaymentStatus, PaymentError> {
         match self.repository.get_payment_by_user(user_id).await {
-            Ok(Some(payment)) => Ok(payment.get_payment_status()),
+            Ok(Some(payment)) => Ok(payment.payment_status),
             Ok(None) => Err(PaymentError::NotFound),
             Err(e) => Err(e),
         }

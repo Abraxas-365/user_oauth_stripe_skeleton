@@ -17,15 +17,15 @@ impl DBRepository for PostgresRepository {
 
     async fn create_payment(&self, payment: &Payment) -> Result<Payment, PaymentError> {
         let query = "
-            INSERT INTO payments (stripe_payment_id, user_id, payment_date, payment_status)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO payments (stripe_payment_id,user_id, payment_date, payment_status)
+            VALUES ($1, $2, $3, $4::payment_status )
             RETURNING *;
         ";
         sqlx::query_as::<_, Payment>(query)
             .bind(&payment.stripe_payment_id)
             .bind(payment.user_id)
             .bind(payment.payment_date)
-            .bind(&payment.payment_status)
+            .bind(&payment.payment_status.to_string())
             .fetch_one(&*self.pg_pool)
             .await
             .map_err(|e| e.into())
@@ -37,7 +37,8 @@ impl DBRepository for PostgresRepository {
         new_status: PaymentStatus,
     ) -> Result<(), PaymentError> {
         let new_status_str: String = new_status.into();
-        let query = "UPDATE payments SET payment_status = $1 WHERE stripe_payment_id = $2";
+        let query =
+            "UPDATE payments SET payment_status = $1::payment_status  WHERE stripe_payment_id = $2";
         sqlx::query(query)
             .bind(new_status_str)
             .bind(stripe_payment_id)

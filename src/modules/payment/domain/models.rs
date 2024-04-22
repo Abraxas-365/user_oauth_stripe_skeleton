@@ -4,15 +4,17 @@ use sqlx::FromRow;
 
 use super::PaymentError;
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Payment {
     pub stripe_payment_id: String,
     pub user_id: i32,
     pub payment_date: DateTime<Utc>,
-    pub payment_status: String,
+    pub payment_status: PaymentStatus,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, sqlx::Type)]
+#[serde(rename_all = "lowercase")]
+#[sqlx(type_name = "payment_status", rename_all = "lowercase")]
 pub enum PaymentStatus {
     Pending,
     Successful,
@@ -34,6 +36,18 @@ impl TryFrom<String> for PaymentStatus {
     }
 }
 
+impl ToString for PaymentStatus {
+    fn to_string(&self) -> String {
+        match self {
+            PaymentStatus::Pending => "pending",
+            PaymentStatus::Successful => "successful",
+            PaymentStatus::Failed => "failed",
+            PaymentStatus::Denied => "denied",
+        }
+        .to_string()
+    }
+}
+
 impl Into<String> for PaymentStatus {
     fn into(self) -> String {
         match self {
@@ -52,19 +66,6 @@ impl Payment {
             user_id,
             payment_date: Utc::now(),
             payment_status: PaymentStatus::Pending.into(),
-        }
-    }
-
-    pub fn get_payment_status(&self) -> PaymentStatus {
-        match self.payment_status.as_ref() {
-            "pending" => PaymentStatus::Pending,
-            "successful" => PaymentStatus::Successful,
-            "failed" => PaymentStatus::Failed,
-            "denied" => PaymentStatus::Denied,
-            _ => {
-                log::error!("Invalid payment status: {}", self.payment_status);
-                PaymentStatus::Denied
-            }
         }
     }
 }
