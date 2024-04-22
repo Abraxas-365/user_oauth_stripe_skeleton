@@ -19,7 +19,6 @@ pub async fn create_payment(
 ) -> Result<HttpResponse, PaymentError> {
     if let Some(claims) = req.extensions().get::<Claims>() {
         let user_id = claims.sub;
-        println!("User ID: {}", user_id);
 
         let payment = service
             .create_payment(user_id, &data.stripe_payment_id)

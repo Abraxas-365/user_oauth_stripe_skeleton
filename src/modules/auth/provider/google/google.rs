@@ -6,13 +6,17 @@ use oauth2::{
     RedirectUrl, Scope, StandardTokenResponse, TokenResponse, TokenUrl,
 };
 use serde_json::Value;
-use std::{env, sync::Arc};
+use std::sync::Arc;
 
-use crate::modules::{
-    auth::{
-        create_jwt, provider::OAuthProvider, AuthError, OAuthData, OAuthProviderType, OAuthResponse,
+use crate::{
+    modules::{
+        auth::{
+            create_jwt, provider::OAuthProvider, AuthError, OAuthData, OAuthProviderType,
+            OAuthResponse,
+        },
+        user,
     },
-    user,
+    utils::Config,
 };
 
 pub struct Provider {
@@ -22,15 +26,11 @@ pub struct Provider {
 
 impl Provider {
     pub fn new(user_service: Arc<user::Service>) -> Self {
-        let google_client_id = env::var("GOOGLE_CLIENT_ID")
-            .unwrap_or_else(|_| panic!("Environment variable {} not set.", "GOOGLE_CLIENT_ID"));
+        let config = Config::from_env();
 
-        let google_client_secret = env::var("GOOGLE_CLIENT_SECRET")
-            .unwrap_or_else(|_| panic!("Environment variable {} not set.", "GOOGLE_CLIENT_SECRET"));
-
-        let google_redirect_uri = env::var("GOOGLE_REDIRECT_URI")
-            .unwrap_or_else(|_| panic!("Environment variable {} not set.", "GOOGLE_REDIRECT_URI"));
-
+        let google_client_id = config.google_client_id;
+        let google_client_secret = config.google_client_secret;
+        let google_redirect_uri = config.google_redirect_uri;
         let client = BasicClient::new(
             ClientId::new(google_client_id),
             Some(ClientSecret::new(google_client_secret)),
