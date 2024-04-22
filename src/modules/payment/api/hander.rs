@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::modules::{
     auth::Claims,
-    payment::{PaymentStatus, Service},
+    payment::{PaymentError, PaymentStatus, Service},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -16,20 +16,18 @@ pub async fn create_payment(
     req: HttpRequest,
     data: web::Json<CreatePaymentRequest>,
     service: web::Data<Arc<Service>>,
-) -> impl Responder {
+) -> Result<HttpResponse, PaymentError> {
     if let Some(claims) = req.extensions().get::<Claims>() {
         let user_id = claims.sub;
         println!("User ID: {}", user_id);
 
-        let result = service
+        let payment = service
             .create_payment(user_id, &data.stripe_payment_id)
-            .await;
-        match result {
-            Ok(payment) => HttpResponse::Ok().json(payment),
-            Err(err) => HttpResponse::InternalServerError().body(format!("{}", err)),
-        }
+            .await?;
+
+        Ok(HttpResponse::Ok().json(payment))
     } else {
-        HttpResponse::Unauthorized().body("No valid JWT token found")
+        Err(PaymentError::AuthorizationFailed)
     }
 }
 
@@ -42,12 +40,10 @@ pub struct UpdatePaymentStatusRequest {
 pub async fn update_payment_status(
     data: web::Json<UpdatePaymentStatusRequest>,
     service: web::Data<Arc<Service>>,
-) -> impl Responder {
-    let result = service
+) -> Result<HttpResponse, PaymentError> {
+    service
         .update_payment_status(&data.stripe_payment_id, data.new_status.clone())
-        .await;
-    match result {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(err) => HttpResponse::InternalServerError().body(format!("{}", err)),
-    }
+        .await?;
+
+    Ok(HttpResponse::Ok().finish())
 }

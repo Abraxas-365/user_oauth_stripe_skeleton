@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
 
-use crate::modules::auth::provider::OAuthProvider;
+use crate::modules::auth::{provider::OAuthProvider, AuthError};
 
 pub async fn redirect_to_oauth(oauth_manager: web::Data<Arc<dyn OAuthProvider>>) -> impl Responder {
     let (url, _csrf_token) = oauth_manager.get_authorization_url().await;
@@ -14,18 +14,14 @@ pub async fn redirect_to_oauth(oauth_manager: web::Data<Arc<dyn OAuthProvider>>)
 pub async fn oauth_callback(
     oauth_manager: web::Data<Arc<dyn OAuthProvider>>,
     query: web::Query<HashMap<String, String>>,
-) -> impl Responder {
-    println!("Handling OAuth callback...");
+) -> Result<HttpResponse, AuthError> {
     if let Some(code) = query.get("code") {
-        match oauth_manager.handle_oauth_callback(code.to_string()).await {
-            Ok(token) => HttpResponse::Ok().json(token),
-            Err(e) => {
-                println!("Error: {:?}", e);
-                HttpResponse::Unauthorized().finish()
-            }
-        }
+        let token = oauth_manager
+            .handle_oauth_callback(code.to_string())
+            .await?;
+        Ok(HttpResponse::Ok().json(token))
     } else {
-        println!("No code in query string.");
-        HttpResponse::BadRequest().finish()
+        log::error!("Invalid callback data provided");
+        Err(AuthError::InvalidCallbackData)
     }
 }
