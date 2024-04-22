@@ -10,9 +10,5 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .route(web::post().to(create_payment))
             .wrap(from_fn(jwt_validator)),
     )
-    .service(
-        web::resource("/payments/status")
-            .route(web::post().to(update_payment_status))
-            .wrap(from_fn(jwt_validator)),
-    );
+    .service(web::resource("/payments/status").route(web::post().to(update_payment_status)));
 }
