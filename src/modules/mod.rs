@@ -1,5 +1,5 @@
 pub mod user;
 
-pub mod payment;
+pub mod stripe;
 
 pub mod auth;

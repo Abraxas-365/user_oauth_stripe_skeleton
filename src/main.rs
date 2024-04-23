@@ -14,7 +14,7 @@ use crate::{
             self,
             provider::{google, OAuthProvider},
         },
-        payment,
+        stripe,
         user::{self},
     },
     utils::PostgresRepository,
@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
     let repo = Arc::new(PostgresRepository::new().await);
 
     let user_service = Arc::new(user::Service::new(repo.clone()));
-    let payment_service = Arc::new(payment::Service::new(repo.clone()));
+    let payment_service = Arc::new(stripe::Service::new(repo.clone()));
 
     let oauth_google = Arc::new(google::Provider::new(user_service.clone()));
 
@@ -40,7 +40,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .wrap(Logger::default())
             .configure(auth::api::config)
-            .configure(payment::api::config)
+            .configure(stripe::api::config)
             .app_data(web::Data::new(payment_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
             .app_data(web::Data::new(
