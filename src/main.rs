@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
     let repo = Arc::new(PostgresRepository::new().await);
 
     let user_service = Arc::new(user::Service::new(repo.clone()));
-    let payment_service = Arc::new(stripe::Service::new(repo.clone()));
+    let payment_service = Arc::new(stripe::Service::new(repo.clone(), user_service.clone()));
 
     let oauth_google = Arc::new(google::Provider::new(user_service.clone()));
 

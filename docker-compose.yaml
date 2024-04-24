@@ -7,9 +7,11 @@ services:
       - "80:80"
     environment:
       - DATABASE_URL=postgres://postgres:password@db:5432/myapp
-      - GOOGLE_CLIENT_ID=<id>
-      - GOOGLE_CLIENT_SECRET=<secret>
-      - GOOGLE_REDIRECT_URI=<callback uri>
+      - GOOGLE_CLIENT_ID=1234
+      - GOOGLE_CLIENT_SECRET=1234
+      - GOOGLE_REDIRECT_URI=https://b1d8-2001-1388-18-75a4-38a1-f7c9-a3ff-5f59.ngrok-free.app/auth/callback
+      - STRIPE_SECRET=1234
+      - JWT_SECRET=your_secret_key
       - RUST_LOG=info
     depends_on:
       - db

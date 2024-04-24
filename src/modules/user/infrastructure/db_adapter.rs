@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
 use crate::{
-    modules::user::{ports::DBRepository, User, UserError},
+    modules::user::{ports::Repository, User, UserError},
     utils::PostgresRepository,
 };
 
 #[async_trait]
-impl DBRepository for PostgresRepository {
+impl Repository for PostgresRepository {
     async fn update_user(&self, user: &User) -> Result<User, UserError> {
         let query = "
             UPDATE users 
@@ -28,6 +28,15 @@ impl DBRepository for PostgresRepository {
             .bind(user.created_at)
             .bind(user.id)
             .fetch_one(&*self.pg_pool)
+            .await
+            .map_err(UserError::from)
+    }
+
+    async fn get_user_by_id(&self, id: i32) -> Result<Option<User>, UserError> {
+        let query = "SELECT * FROM users WHERE id = $1";
+        sqlx::query_as::<_, User>(query)
+            .bind(id)
+            .fetch_optional(&*self.pg_pool)
             .await
             .map_err(UserError::from)
     }

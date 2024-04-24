@@ -11,7 +11,7 @@ pub enum UserError {
     UserAlreadyExists,
 
     #[error("User not found")]
-    UserNotFound,
+    NotFound,
 
     #[error("Invalid input: {0}")]
     InvalidInput(String),
@@ -24,7 +24,7 @@ impl ResponseError for UserError {
                 HttpResponse::InternalServerError().json("Database error")
             }
             UserError::UserAlreadyExists => HttpResponse::Conflict().json("User already exists"),
-            UserError::UserNotFound => HttpResponse::NotFound().json("User not found"),
+            UserError::NotFound => HttpResponse::NotFound().json("User not found"),
             UserError::InvalidInput(msg) => {
                 HttpResponse::BadRequest().json(format!("Invalid input: {}", msg))
             }
@@ -35,7 +35,7 @@ impl ResponseError for UserError {
         match self {
             UserError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             UserError::UserAlreadyExists => StatusCode::CONFLICT,
-            UserError::UserNotFound => StatusCode::NOT_FOUND,
+            UserError::NotFound => StatusCode::NOT_FOUND,
             UserError::InvalidInput(_) => StatusCode::BAD_REQUEST,
         }
     }

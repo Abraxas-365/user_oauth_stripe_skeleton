@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use crate::modules::auth::OAuthData;
 
-use super::{ports::DBRepository, User, UserError};
+use super::{ports::Repository, User, UserError};
 
 pub struct Service {
-    repository: Arc<dyn DBRepository>,
+    repository: Arc<dyn Repository>,
 }
 impl Service {
-    pub fn new(repository: Arc<dyn DBRepository>) -> Self {
+    pub fn new(repository: Arc<dyn Repository>) -> Self {
         Self { repository }
     }
 
@@ -30,5 +30,13 @@ impl Service {
                 Ok(self.repository.create_user(&new_user).await?)
             }
         }
+    }
+
+    pub async fn get_user_by_id(&self, user_id: i32) -> Result<Option<User>, UserError> {
+        self.repository.get_user_by_id(user_id).await
+    }
+
+    pub async fn update_user(&self, user: &User) -> Result<User, UserError> {
+        self.repository.update_user(user).await
     }
 }

@@ -1,11 +1,11 @@
 use crate::{
-    modules::stripe::{ports::DBRepository, Payment, PaymentError, PaymentStatus},
+    modules::stripe::{ports::Repository, Payment, PaymentError, PaymentStatus},
     utils::PostgresRepository,
 };
 use async_trait::async_trait;
 
 #[async_trait]
-impl DBRepository for PostgresRepository {
+impl Repository for PostgresRepository {
     async fn get_payment_by_user(&self, user_id: i32) -> Result<Option<Payment>, PaymentError> {
         let query = "SELECT * FROM payments WHERE user_id = $1";
         sqlx::query_as::<_, Payment>(query)

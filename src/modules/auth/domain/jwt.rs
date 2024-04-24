@@ -2,7 +2,7 @@ use chrono::Utc;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::modules::user::User;
+use crate::{modules::user::User, utils::Config};
 
 use super::AuthError;
 
@@ -13,6 +13,7 @@ pub struct Claims {
 }
 
 pub fn create_jwt(user: &User) -> Result<String, AuthError> {
+    let config = Config::from_env();
     let expiration_seconds = 3600; // Define the expiration to be in 1 hour
     let claims = Claims {
         sub: user.id,
@@ -22,15 +23,16 @@ pub fn create_jwt(user: &User) -> Result<String, AuthError> {
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret("your_secret_key".as_ref()),
+        &EncodingKey::from_secret(config.jwt_secret.as_ref()),
     )
     .map_err(|err| AuthError::JwtCreationFailed(err.to_string()))
 }
 
 pub fn verify_jwt(token: &str) -> Result<Claims, AuthError> {
+    let config = Config::from_env();
     decode::<Claims>(
         token,
-        &DecodingKey::from_secret("your_secret_key".as_ref()),
+        &DecodingKey::from_secret(config.jwt_secret.as_ref()),
         &Validation::new(Algorithm::HS256),
     )
     .map(|data| data.claims)
@@ -46,7 +48,9 @@ mod tests {
     static TEST_USER_ID: i32 = 1;
     fn get_test_user() -> User {
         User {
+            name: "test".into(),
             id: 1,
+            stripe_customer_id: None,
             email: "test".into(),
             oauth_provider: "google".into(),
             oauth_id: "1234".into(),
