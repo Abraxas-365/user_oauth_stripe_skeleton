@@ -6,6 +6,7 @@ pub struct Config {
     pub google_redirect_uri: String,
     pub database_url: String,
     pub strip_secret: String,
+    pub stripe_checkout_cancel_url: String,
     pub jwt_secret: String,
 }
 
@@ -19,6 +20,8 @@ impl Config {
                 .expect("GOOGLE_REDIRECT_URI not set"),
             database_url: env::var("DATABASE_URL").expect("DATABASE_URL not set"),
             strip_secret: env::var("STRIPE_SECRET").expect("STRIPE_SECRET not set"),
+            stripe_checkout_cancel_url: env::var("STRIPE_CHECKOUT_CANCEL_URL")
+                .expect("STRIPE_CHECKOUT_CANCEL_URL not set"),
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET not set"),
         }
     }

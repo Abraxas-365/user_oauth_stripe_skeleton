@@ -1,6 +1,6 @@
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use sqlx::Error as SqlxError;
-use stripe::StripeError;
+use stripe::{ParseIdError, StripeError};
 use thiserror::Error;
 
 use crate::modules::user::UserError;
@@ -13,6 +13,9 @@ pub enum PaymentError {
     #[error("Payment not found")]
     NotFound,
 
+    #[error("Couldn't create checkout")]
+    CreateCheckoutError,
+
     #[error("Invalid payment status: {0}")]
     InvalidPaymentStatus(String),
 
@@ -24,11 +27,20 @@ pub enum PaymentError {
 
     #[error("Stripe error: {0}")]
     StripeError(#[from] StripeError),
+
+    #[error("Stripe Id parse error")]
+    ParseIdError(#[from] ParseIdError),
 }
 
 impl ResponseError for PaymentError {
     fn error_response(&self) -> HttpResponse {
         match self {
+            PaymentError::CreateCheckoutError => {
+                HttpResponse::InternalServerError().json("Couldn't create checkout")
+            }
+            PaymentError::ParseIdError(_) => {
+                HttpResponse::InternalServerError().json("Stripe Id parse error")
+            }
             PaymentError::StripeError(_) => {
                 HttpResponse::InternalServerError().json("Stripe error")
             }
@@ -48,7 +60,9 @@ impl ResponseError for PaymentError {
 
     fn status_code(&self) -> StatusCode {
         match self {
+            PaymentError::CreateCheckoutError => StatusCode::INTERNAL_SERVER_ERROR,
             PaymentError::StripeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            PaymentError::ParseIdError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             PaymentError::AuthorizationFailed => StatusCode::UNAUTHORIZED,
             PaymentError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             PaymentError::NotFound => StatusCode::NOT_FOUND,

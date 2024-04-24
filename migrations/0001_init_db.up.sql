@@ -25,26 +25,3 @@ CREATE TABLE payments (
 );
 
 
--- If you need to add more information you should create another table
--- This is just the core for the skeleton to work
-CREATE TABLE tiers (
-    id SERIAL PRIMARY KEY,
-    price BIGINT NOT NULL,  
-);
-
-
-
-
-CREATE TABLE subscriptions (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    tier_id INTEGER NOT NULL,
-    start_date TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc'),
-    end_date TIMESTAMPTZ,
-    active BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (tier_id) REFERENCES tiers(id) ON DELETE CASCADE
-);
-
-
-
