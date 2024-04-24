@@ -99,6 +99,11 @@ impl Service {
         Ok(product)
     }
 
+    pub async fn get_all_products(&self) -> Result<Vec<Product>, PaymentError> {
+        let products = Product::list(&self.stripe_client, &Default::default()).await?;
+        Ok(products.data)
+    }
+
     pub async fn get_product_price(&self, product_id: &str) -> Result<Price, PaymentError> {
         let product_id = product_id.parse::<ProductId>()?;
         let price = stripe::Price::list(
