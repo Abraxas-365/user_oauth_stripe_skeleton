@@ -9,24 +9,28 @@ use crate::{
 impl Repository for PostgresRepository {
     async fn update_user(&self, user: &User) -> Result<User, UserError> {
         let query = "
-            UPDATE users 
-            SET email = $1, 
-                image_url = $2, 
-                oauth_provider = $3, 
-                oauth_id = $4, 
-                oauth_refresh_token = $5, 
-                created_at = $6
-            WHERE id = $7
-            RETURNING id, email, image_url, oauth_provider, oauth_id, oauth_refresh_token, created_at;
-        ";
+        UPDATE users
+        SET name = $1,
+            email = $2,
+            image_url = $3,
+            oauth_provider = $4,
+            oauth_id = $5,
+            stripe_customer_id = $6,
+            oauth_refresh_token = $7,
+            created_at = $8
+        WHERE id = $9
+        RETURNING id, name, email, image_url, oauth_provider, oauth_id, stripe_customer_id, oauth_refresh_token, created_at;
+    ";
         sqlx::query_as::<_, User>(query)
+            .bind(&user.name)
             .bind(&user.email)
             .bind(&user.image_url)
             .bind(&user.oauth_provider)
             .bind(&user.oauth_id)
+            .bind(&user.stripe_customer_id)
             .bind(&user.oauth_refresh_token)
-            .bind(user.created_at)
-            .bind(user.id)
+            .bind(&user.created_at)
+            .bind(&user.id)
             .fetch_one(&*self.pg_pool)
             .await
             .map_err(UserError::from)
@@ -52,17 +56,19 @@ impl Repository for PostgresRepository {
 
     async fn create_user(&self, user: &User) -> Result<User, UserError> {
         let query = "
-            INSERT INTO users (email, image_url, oauth_provider, oauth_id, oauth_refresh_token, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, email, image_url, oauth_provider, oauth_id, oauth_refresh_token, created_at;
-        ";
+        INSERT INTO users (name, email, image_url, oauth_provider, oauth_id, stripe_customer_id, oauth_refresh_token, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, name, email, image_url, oauth_provider, oauth_id, stripe_customer_id, oauth_refresh_token, created_at;
+    ";
         sqlx::query_as::<_, User>(query)
+            .bind(&user.name)
             .bind(&user.email)
             .bind(&user.image_url)
             .bind(&user.oauth_provider)
             .bind(&user.oauth_id)
+            .bind(&user.stripe_customer_id)
             .bind(&user.oauth_refresh_token)
-            .bind(user.created_at)
+            .bind(&user.created_at)
             .fetch_one(&*self.pg_pool)
             .await
             .map_err(UserError::from)

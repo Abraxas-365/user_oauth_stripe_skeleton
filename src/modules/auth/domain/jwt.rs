@@ -9,7 +9,7 @@ use super::AuthError;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: i32,
-    pub exp: Option<i64>,
+    pub exp: i64,
 }
 
 pub fn create_jwt(user: &User) -> Result<String, AuthError> {
@@ -17,7 +17,7 @@ pub fn create_jwt(user: &User) -> Result<String, AuthError> {
     let expiration_seconds = 3600; // Define the expiration to be in 1 hour
     let claims = Claims {
         sub: user.id,
-        exp: Some((Utc::now() + chrono::Duration::seconds(expiration_seconds)).timestamp()), // Create an unix timestamp
+        exp: (Utc::now() + chrono::Duration::seconds(expiration_seconds)).timestamp(), // Create an unix timestamp
     };
 
     encode(
@@ -30,10 +30,13 @@ pub fn create_jwt(user: &User) -> Result<String, AuthError> {
 
 pub fn verify_jwt(token: &str) -> Result<Claims, AuthError> {
     let config = Config::from_env();
+    let mut validation = Validation::new(Algorithm::HS256);
+    validation.validate_exp = false;
+
     decode::<Claims>(
         token,
         &DecodingKey::from_secret(config.jwt_secret.as_ref()),
-        &Validation::new(Algorithm::HS256),
+        &validation,
     )
     .map(|data| data.claims)
     .map_err(|err| AuthError::JwtError(err))
@@ -72,6 +75,5 @@ mod tests {
         assert_eq!(claims.sub, TEST_USER_ID, "JWT 'sub' field mismatch");
 
         // Ensure that the 'exp' field is correctly set and not None
-        assert!(claims.exp.is_some(), "JWT 'exp' field should not be None");
     }
 }

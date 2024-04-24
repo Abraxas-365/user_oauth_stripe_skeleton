@@ -7,6 +7,7 @@ pub struct Config {
     pub database_url: String,
     pub strip_secret: String,
     pub stripe_checkout_cancel_url: String,
+    pub stripe_checkout_success_url: String,
     pub jwt_secret: String,
 }
 
@@ -22,6 +23,8 @@ impl Config {
             strip_secret: env::var("STRIPE_SECRET").expect("STRIPE_SECRET not set"),
             stripe_checkout_cancel_url: env::var("STRIPE_CHECKOUT_CANCEL_URL")
                 .expect("STRIPE_CHECKOUT_CANCEL_URL not set"),
+            stripe_checkout_success_url: env::var("STRIPE_CHECKOUT_SUCCESS_URL")
+                .expect("STRIPE_CHECKOUT_SUCCESS_URL not set"),
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET not set"),
         }
     }

@@ -4,7 +4,7 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    name: VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
     image_url TEXT,
     oauth_provider VARCHAR(255) NOT NULL,
     oauth_id VARCHAR(255) NOT NULL,
