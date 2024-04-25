@@ -8,7 +8,10 @@ use stripe::{
 
 use crate::{
     error::ApiError,
-    modules::user::{self, User, UserError},
+    modules::{
+        subscription::{self, UserSubscription},
+        user::{self, User, UserError},
+    },
     utils::Config,
 };
 
@@ -17,17 +20,23 @@ use super::{ports::Repository, Payment, PaymentError, PaymentStatus};
 pub struct Service {
     repository: Arc<dyn Repository>,
     user_service: Arc<user::Service>,
+    subscription_service: Arc<subscription::Service>,
     stripe_client: Client,
     config: Config,
 }
 
 impl Service {
-    pub fn new(repository: Arc<dyn Repository>, user_service: Arc<user::Service>) -> Self {
+    pub fn new(
+        repository: Arc<dyn Repository>,
+        user_service: Arc<user::Service>,
+        subscription_service: Arc<subscription::Service>,
+    ) -> Self {
         let config = Config::from_env();
         let stripe_client = Client::new(&config.strip_secret);
         Self {
             repository,
             user_service,
+            subscription_service,
             stripe_client,
             config,
         }
@@ -168,6 +177,18 @@ impl Service {
     ) -> Result<(), ApiError> {
         let checkout_session = self.get_checkout_session_by_id(checkout_session_id).await?;
 
+        let payment = self.create_payment(&checkout_session).await?;
+        self.repository.create_payment(&payment).await?;
+
+        self.create_user_subscription(&payment).await?;
+
+        Ok(())
+    }
+
+    async fn create_payment(
+        &self,
+        checkout_session: &CheckoutSession,
+    ) -> Result<Payment, ApiError> {
         let payment_intent = checkout_session
             .payment_intent
             .as_ref()
@@ -191,6 +212,7 @@ impl Service {
 
         let customer_id = checkout_session
             .customer
+            .clone()
             .ok_or(PaymentError::ItemNotFound)?
             .id();
 
@@ -200,11 +222,22 @@ impl Service {
             .await?
             .ok_or(UserError::UserNotFound)?;
 
-        let pament = Payment::new(user.id, payment_intent.as_str(), product_id.as_str())
+        let payment = Payment::new(user.id, payment_intent.as_str(), product_id.as_str())
             .with_status(PaymentStatus::Successful);
 
-        self.repository.create_payment(&pament).await?;
+        Ok(payment)
+    }
 
+    async fn create_user_subscription(&self, payment: &Payment) -> Result<(), ApiError> {
+        let user_subscription = UserSubscription::new(
+            payment.user_id,
+            payment.stripe_product_id.clone(),
+            payment.stripe_payment_id.clone(),
+            payment.payment_date,
+        );
+        self.subscription_service
+            .create_subscription(&user_subscription)
+            .await?;
         Ok(())
     }
 }
