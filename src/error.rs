@@ -3,7 +3,9 @@ use serde::Serialize;
 use stripe::{ParseIdError, StripeError};
 use thiserror::Error;
 
-use crate::modules::{auth::AuthError, stripe::PaymentError, user::UserError}; // Import sqlx::Error if you're using SQLx.
+use crate::modules::{
+    auth::AuthError, stripe::PaymentError, subscription::SubscriptionError, user::UserError,
+}; // Import sqlx::Error if you're using SQLx.
 
 #[derive(Error, Debug)]
 pub enum ApiError {
@@ -36,6 +38,9 @@ pub enum ApiError {
 
     #[error(transparent)]
     UserError(#[from] UserError),
+
+    #[error(transparent)]
+    SubscriptionError(#[from] SubscriptionError),
 
     #[error("Stripe error: {0}")]
     StripeError(#[from] StripeError),
@@ -88,6 +93,10 @@ impl ResponseError for ApiError {
                 | AuthError::SerdeParseError(_) => StatusCode::BAD_GATEWAY,
 
                 AuthError::InvalidCallbackData => StatusCode::BAD_REQUEST,
+            },
+            ApiError::SubscriptionError(ref e) => match e {
+                SubscriptionError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                SubscriptionError::SubscriptionNotFound => StatusCode::NOT_FOUND,
             },
         }
     }

@@ -13,6 +13,19 @@ CREATE TABLE users (
     created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc')
 );
 
+
+-- Creating a junction table for users and stripe products
+CREATE TABLE user_subscription (
+    user_id INTEGER NOT NULL,
+    stripe_product_id VARCHAR(255) NOT NULL,
+    stripe_payment_id VARCHAR(255) NOT NULL,
+    subscription_date TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc'),
+    is_active BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (user_id, stripe_product_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (stripe_product_id) REFERENCES products(stripe_product_id) -- Assumes a table 'products' exists
+);
+
 -- Define enum type for payment status
 CREATE TYPE payment_status AS ENUM ('pending', 'successful', 'failed', 'denied');
 
