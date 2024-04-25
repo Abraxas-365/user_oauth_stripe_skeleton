@@ -63,19 +63,6 @@ pub async fn handle_webhook(
                 }
             }
 
-            // EventType::PaymentIntentSucceeded => {
-            //     log::debug!("PaymentIntentSucceeded");
-            //     if let EventObject::PaymentIntent(intent) = event.data.object {
-            //         let _ = service
-            //             .update_payment_status(intent.id.as_str(), true)
-            //             .await?;
-            //     }
-            // }
-            //
-            // EventType::CheckoutSessionAsyncPaymentSucceeded => {
-            //     log::debug!("CheckoutSessionAsyncPaymentSucceeded");
-            //     if let EventObject::CheckoutSession(session) = event.data.object {}
-            // }
             _ => {
                 println!("Unknown event encountered in webhook: {:?}", event.type_);
             }
