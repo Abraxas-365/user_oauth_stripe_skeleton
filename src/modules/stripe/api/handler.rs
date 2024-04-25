@@ -1,6 +1,7 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
+use serde::Deserialize;
 use stripe::{EventObject, EventType, Webhook};
 
 use crate::{
@@ -14,17 +15,20 @@ pub async fn get_products(service: web::Data<Arc<Service>>) -> Result<HttpRespon
     Ok(HttpResponse::Ok().json(products))
 }
 
+#[derive(Deserialize)]
+pub struct CheckoutParams {
+    product_id: String,
+}
 pub async fn get_checkout(
     req: HttpRequest,
+    params: web::Query<CheckoutParams>,
     service: web::Data<Arc<Service>>,
 ) -> Result<HttpResponse, ApiError> {
     //The middleware will take care if the claim is not present
     if let Some(claims) = req.extensions().get::<Claims>() {
         let user_id = claims.sub;
 
-        let url = service
-            .create_checkout(user_id, "prod_Pz8TwS1quXKuWq")
-            .await?;
+        let url = service.create_checkout(user_id, &params.product_id).await?;
 
         Ok(HttpResponse::Ok().json(url))
     } else {
