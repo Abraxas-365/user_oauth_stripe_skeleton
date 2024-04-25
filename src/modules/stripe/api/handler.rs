@@ -64,11 +64,12 @@ pub async fn handle_webhook(
             }
 
             _ => {
-                println!("Unknown event encountered in webhook: {:?}", event.type_);
+                log::info!("Unknown event encountered in webhook: {:?}", event.type_);
             }
         }
     } else {
-        println!("Failed to construct webhook event, ensure your webhook secret is correct.");
+        log::error!("Failed to construct webhook event, ensure your webhook secret is correct.");
+        return Err(ApiError::InternalServerError);
     }
 
     Ok(())
