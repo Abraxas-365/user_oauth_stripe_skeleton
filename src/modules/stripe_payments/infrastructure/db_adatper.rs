@@ -1,5 +1,5 @@
 use crate::{
-    modules::stripe::{ports::Repository, Payment, PaymentError, PaymentStatus},
+    modules::stripe_payments::{ports::Repository, Payment, PaymentError, PaymentStatus},
     utils::PostgresRepository,
 };
 use async_trait::async_trait;

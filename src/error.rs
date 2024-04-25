@@ -4,7 +4,8 @@ use stripe::{ParseIdError, StripeError};
 use thiserror::Error;
 
 use crate::modules::{
-    auth::AuthError, stripe::PaymentError, subscription::SubscriptionError, user::UserError,
+    auth::AuthError, stripe_payments::PaymentError, subscription::SubscriptionError,
+    user::UserError,
 }; // Import sqlx::Error if you're using SQLx.
 
 #[derive(Error, Debug)]

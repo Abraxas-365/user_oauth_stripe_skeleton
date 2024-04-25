@@ -6,7 +6,7 @@ use stripe::{EventObject, EventType, Webhook};
 
 use crate::{
     error::ApiError,
-    modules::{auth::Claims, stripe::Service},
+    modules::{auth::Claims, stripe_payments::Service},
     utils::Config,
 };
 
