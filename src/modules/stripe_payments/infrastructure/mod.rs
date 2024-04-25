@@ -1,1 +1,1 @@
-mod db_adatper;
+mod db_adapter;
