@@ -259,6 +259,7 @@ impl Service {
             return Ok(());
         }
 
+        //Create new subscription
         let user_subscription = UserSubscription::new(
             user_id,
             payment.stripe_product_id.clone(),
