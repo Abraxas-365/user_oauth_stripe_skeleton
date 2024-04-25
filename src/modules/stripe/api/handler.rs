@@ -57,7 +57,9 @@ pub async fn handle_webhook(
         match event.type_ {
             EventType::CheckoutSessionCompleted => {
                 if let EventObject::CheckoutSession(session) = event.data.object {
-                    let _ = service.create_payment(session.id.as_str()).await?;
+                    let _ = service
+                        .create_payment_from_checkout(session.id.as_str())
+                        .await?;
                 }
             }
 

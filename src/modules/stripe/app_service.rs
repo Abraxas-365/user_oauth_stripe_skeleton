@@ -162,7 +162,10 @@ impl Service {
 
 //Payment
 impl Service {
-    pub async fn create_payment(&self, checkout_session_id: &str) -> Result<(), ApiError> {
+    pub async fn create_payment_from_checkout(
+        &self,
+        checkout_session_id: &str,
+    ) -> Result<(), ApiError> {
         let checkout_session = self.get_checkout_session_by_id(checkout_session_id).await?;
 
         let payment_intent = checkout_session
@@ -197,29 +200,11 @@ impl Service {
             .await?
             .ok_or(UserError::UserNotFound)?;
 
-        let pament = Payment::new(user.id, payment_intent.as_str(), product_id.as_str());
+        let pament = Payment::new(user.id, payment_intent.as_str(), product_id.as_str())
+            .with_status(PaymentStatus::Successful);
 
         self.repository.create_payment(&pament).await?;
 
-        Ok(())
-    }
-
-    pub async fn update_payment_status(
-        &self,
-        checkout_session_id: &str,
-        status: PaymentStatus,
-    ) -> Result<(), ApiError> {
-        let checkout_session = self.get_checkout_session_by_id(checkout_session_id).await?;
-
-        let payment_intent = checkout_session
-            .payment_intent
-            .as_ref()
-            .ok_or(PaymentError::ItemNotFound)?
-            .id();
-
-        self.repository
-            .update_payment_status(payment_intent.as_str(), status)
-            .await?;
         Ok(())
     }
 }

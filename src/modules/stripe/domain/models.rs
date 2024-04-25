@@ -70,4 +70,8 @@ impl Payment {
             payment_status: PaymentStatus::Pending.into(),
         }
     }
+    pub fn with_status(mut self, status: PaymentStatus) -> Self {
+        self.payment_status = status;
+        self
+    }
 }
