@@ -15,7 +15,7 @@ use crate::{
             self,
             provider::{google, OAuthProvider},
         },
-        stripe_payments,
+        stripe_payments, subscription,
         user::{self},
     },
     utils::PostgresRepository,
@@ -47,6 +47,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .configure(auth::api::config)
             .configure(stripe_payments::api::config)
+            .configure(subscription::api::config)
             .app_data(web::Data::new(payment_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
             .app_data(web::Data::new(
