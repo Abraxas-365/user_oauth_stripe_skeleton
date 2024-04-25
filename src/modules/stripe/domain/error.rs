@@ -10,6 +10,9 @@ pub enum PaymentError {
     #[error("Database error: {0}")]
     DatabaseError(#[from] SqlxError),
 
+    #[error("Item in payment not found - likely due to missing line item or product information.")]
+    ItemNotFound,
+
     #[error("Payment not found")]
     NotFound,
 
@@ -30,11 +33,20 @@ pub enum PaymentError {
 
     #[error("Stripe Id parse error")]
     ParseIdError(#[from] ParseIdError),
+
+    #[error("Stripe Webhook error")]
+    WebhookError(#[from] stripe::WebhookError),
 }
 
 impl ResponseError for PaymentError {
     fn error_response(&self) -> HttpResponse {
         match self {
+            PaymentError::WebhookError(_) => {
+                HttpResponse::InternalServerError().json("Stripe Webhook error")
+            }
+            PaymentError::ItemNotFound => {
+                HttpResponse::InternalServerError().json("Item not found")
+            }
             PaymentError::CreateCheckoutError => {
                 HttpResponse::InternalServerError().json("Couldn't create checkout")
             }
@@ -60,6 +72,8 @@ impl ResponseError for PaymentError {
 
     fn status_code(&self) -> StatusCode {
         match self {
+            PaymentError::WebhookError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            PaymentError::ItemNotFound => StatusCode::INTERNAL_SERVER_ERROR,
             PaymentError::CreateCheckoutError => StatusCode::INTERNAL_SERVER_ERROR,
             PaymentError::StripeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             PaymentError::ParseIdError(_) => StatusCode::INTERNAL_SERVER_ERROR,

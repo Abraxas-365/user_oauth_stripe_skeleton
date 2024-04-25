@@ -8,6 +8,7 @@ use super::PaymentError;
 pub struct Payment {
     pub stripe_payment_id: String,
     pub user_id: i32,
+    pub stripe_product_id: String,
     pub payment_date: DateTime<Utc>,
     pub payment_status: PaymentStatus,
 }
@@ -60,11 +61,12 @@ impl Into<String> for PaymentStatus {
 }
 
 impl Payment {
-    pub fn new(user_id: i32, stripe_payment_id: &str) -> Payment {
+    pub fn new(user_id: i32, stripe_payment_id: &str, stripe_product_id: &str) -> Payment {
         Payment {
             stripe_payment_id: stripe_payment_id.to_string(),
             user_id,
             payment_date: Utc::now(),
+            stripe_product_id: stripe_product_id.to_string(),
             payment_status: PaymentStatus::Pending.into(),
         }
     }

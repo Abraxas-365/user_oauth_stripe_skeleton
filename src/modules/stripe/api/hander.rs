@@ -2,11 +2,14 @@ use std::{borrow::Borrow, sync::Arc};
 
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
-use stripe::{EventObject, EventType, Webhook};
+use stripe::{CheckoutSession, EventObject, EventType, Webhook, WebhookError};
 
-use crate::modules::{
-    auth::Claims,
-    stripe::{PaymentError, Service},
+use crate::{
+    modules::{
+        auth::Claims,
+        stripe::{PaymentError, Service},
+    },
+    utils::Config,
 };
 
 pub async fn get_products(service: web::Data<Arc<Service>>) -> Result<HttpResponse, PaymentError> {
@@ -29,4 +32,61 @@ pub async fn get_checkout(
     } else {
         Err(PaymentError::AuthorizationFailed)
     }
+}
+
+pub async fn webhook_handler(
+    req: HttpRequest,
+    service: web::Data<Arc<Service>>,
+    payload: web::Bytes,
+) -> HttpResponse {
+    handle_webhook(req, service, payload).await.unwrap();
+    HttpResponse::Ok().finish()
+}
+
+pub async fn handle_webhook(
+    req: HttpRequest,
+    service: web::Data<Arc<Service>>,
+    payload: web::Bytes,
+) -> Result<(), PaymentError> {
+    let config = Config::from_env();
+    let payload_str = std::str::from_utf8(payload.borrow()).unwrap();
+
+    let stripe_signature = get_header_value(&req, "Stripe-Signature").unwrap_or_default();
+
+    if let Ok(event) =
+        Webhook::construct_event(payload_str, stripe_signature, &config.stripe_webhook_secret)
+    {
+        match event.type_ {
+            EventType::CheckoutSessionCompleted => {
+                if let EventObject::CheckoutSession(session) = event.data.object {
+                    let _ = service.create_payment(session.id.as_str()).await?;
+                }
+            }
+
+            EventType::PaymentIntentSucceeded => {
+                log::debug!("PaymentIntentSucceeded");
+                if let EventObject::PaymentIntent(intent) = event.data.object {
+                    let _ = service
+                        .update_payment_status(intent.id.as_str(), true)
+                        .await?;
+                }
+            }
+
+            // EventType::CheckoutSessionAsyncPaymentSucceeded => {
+            //     log::debug!("CheckoutSessionAsyncPaymentSucceeded");
+            //     if let EventObject::CheckoutSession(session) = event.data.object {}
+            // }
+            _ => {
+                println!("Unknown event encountered in webhook: {:?}", event.type_);
+            }
+        }
+    } else {
+        println!("Failed to construct webhook event, ensure your webhook secret is correct.");
+    }
+
+    Ok(())
+}
+
+fn get_header_value<'b>(req: &'b HttpRequest, key: &'b str) -> Option<&'b str> {
+    req.headers().get(key)?.to_str().ok()
 }

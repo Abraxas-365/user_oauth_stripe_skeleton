@@ -45,6 +45,15 @@ impl Repository for PostgresRepository {
             .map_err(UserError::from)
     }
 
+    async fn get_user_by_customer_id(&self, customer_id: &str) -> Result<Option<User>, UserError> {
+        let query = "SELECT * FROM users WHERE stripe_customer_id = $1";
+        sqlx::query_as::<_, User>(query)
+            .bind(customer_id)
+            .fetch_optional(&*self.pg_pool)
+            .await
+            .map_err(UserError::from)
+    }
+
     async fn get_user_by_email(&self, email: &str) -> Result<Option<User>, UserError> {
         let query = "SELECT * FROM users WHERE email = $1";
         sqlx::query_as::<_, User>(query)

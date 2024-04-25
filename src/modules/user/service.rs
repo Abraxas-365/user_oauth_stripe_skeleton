@@ -36,6 +36,13 @@ impl Service {
         self.repository.get_user_by_id(user_id).await
     }
 
+    pub async fn get_user_by_customer_id(
+        &self,
+        customer_id: &str,
+    ) -> Result<Option<User>, UserError> {
+        self.repository.get_user_by_customer_id(customer_id).await
+    }
+
     pub async fn update_user(&self, user: &User) -> Result<User, UserError> {
         self.repository.update_user(user).await
     }

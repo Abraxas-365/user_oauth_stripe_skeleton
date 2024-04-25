@@ -17,13 +17,14 @@ impl Repository for PostgresRepository {
 
     async fn create_payment(&self, payment: &Payment) -> Result<Payment, PaymentError> {
         let query = "
-            INSERT INTO payments (stripe_payment_id,user_id, payment_date, payment_status)
-            VALUES ($1, $2, $3, $4::payment_status )
+            INSERT INTO payments (stripe_payment_id,user_id, stripe_product_id, payment_date, payment_status)
+            VALUES ($1, $2, $3, $4, $5::payment_status )
             RETURNING *;
         ";
         sqlx::query_as::<_, Payment>(query)
             .bind(&payment.stripe_payment_id)
             .bind(payment.user_id)
+            .bind(&payment.stripe_product_id)
             .bind(payment.payment_date)
             .bind(&payment.payment_status.to_string())
             .fetch_one(&*self.pg_pool)
