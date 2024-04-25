@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use super::{SubscriptionError, UserSubscription};
 
 #[async_trait]
-pub trait Repository {
+pub trait Repository: Send + Sync {
     async fn get_subscription_by_user(
         &self,
         user_id: i32,
