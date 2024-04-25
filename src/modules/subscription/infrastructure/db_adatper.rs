@@ -13,7 +13,7 @@ impl Repository for PostgresRepository {
         let query = "
             SELECT user_id, stripe_product_id, stripe_payment_id, subscription_date, is_active 
             FROM user_subscription 
-            WHERE user_id = $1";
+            WHERE user_id = $1 and is_active = true";
         sqlx::query_as::<_, UserSubscription>(query)
             .bind(user_id)
             .fetch_optional(&*self.pg_pool)

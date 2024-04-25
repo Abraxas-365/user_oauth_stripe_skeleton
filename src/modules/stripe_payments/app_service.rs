@@ -119,6 +119,17 @@ impl Service {
         user_id: i32,
         product_id: &str,
     ) -> Result<String, ApiError> {
+        //If user already have this subscription return error
+        if let Some(subscription) = self
+            .subscription_service
+            .get_subscription_by_user(user_id)
+            .await?
+        {
+            if subscription.stripe_product_id == product_id {
+                return Err(PaymentError::AllreadyHaveProduct)?;
+            }
+        }
+
         let user = self
             .user_service
             .get_user_by_id(user_id)
@@ -229,8 +240,27 @@ impl Service {
     }
 
     async fn create_user_subscription(&self, payment: &Payment) -> Result<(), ApiError> {
+        let user_id = payment.user_id;
+
+        //Update the last subscription to non active any more
+        if let Some(subscription) = self
+            .subscription_service
+            .get_subscription_by_user(user_id)
+            .await?
+        {
+            let updated_subscription = UserSubscription {
+                is_active: false,
+                ..subscription
+            };
+
+            self.subscription_service
+                .update_subscription(&updated_subscription)
+                .await?;
+            return Ok(());
+        }
+
         let user_subscription = UserSubscription::new(
-            payment.user_id,
+            user_id,
             payment.stripe_product_id.clone(),
             payment.stripe_payment_id.clone(),
             payment.payment_date,

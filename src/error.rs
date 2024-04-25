@@ -81,6 +81,7 @@ impl ResponseError for ApiError {
                 PaymentError::PaymentNotFound => StatusCode::NOT_FOUND,
                 PaymentError::CreateCheckoutError => StatusCode::INTERNAL_SERVER_ERROR,
                 PaymentError::InvalidPaymentStatus(_) => StatusCode::BAD_REQUEST,
+                PaymentError::AllreadyHaveProduct => StatusCode::CONFLICT,
             },
             ApiError::AuthError(ref e) => match e {
                 AuthError::AuthorizationFailed
