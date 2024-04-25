@@ -1,4 +1,3 @@
-use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 
@@ -11,32 +10,5 @@ pub enum UserError {
     UserAlreadyExists,
 
     #[error("User not found")]
-    NotFound,
-
-    #[error("Invalid input: {0}")]
-    InvalidInput(String),
-}
-
-impl ResponseError for UserError {
-    fn error_response(&self) -> HttpResponse {
-        match self {
-            UserError::DatabaseError(_) => {
-                HttpResponse::InternalServerError().json("Database error")
-            }
-            UserError::UserAlreadyExists => HttpResponse::Conflict().json("User already exists"),
-            UserError::NotFound => HttpResponse::NotFound().json("User not found"),
-            UserError::InvalidInput(msg) => {
-                HttpResponse::BadRequest().json(format!("Invalid input: {}", msg))
-            }
-        }
-    }
-
-    fn status_code(&self) -> StatusCode {
-        match self {
-            UserError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            UserError::UserAlreadyExists => StatusCode::CONFLICT,
-            UserError::NotFound => StatusCode::NOT_FOUND,
-            UserError::InvalidInput(_) => StatusCode::BAD_REQUEST,
-        }
-    }
+    UserNotFound,
 }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::modules::auth::OAuthData;
+use crate::{error::ApiError, modules::auth::OAuthData};
 
 use super::{ports::Repository, User, UserError};
 
@@ -12,7 +12,7 @@ impl Service {
         Self { repository }
     }
 
-    pub async fn sign_up_or_login(&self, oauth_data: OAuthData) -> Result<User, UserError> {
+    pub async fn sign_up_or_login(&self, oauth_data: OAuthData) -> Result<User, ApiError> {
         match self.repository.get_user_by_email(&oauth_data.email).await? {
             Some(user) => {
                 if user.oauth_refresh_token != oauth_data.refresh_token {
@@ -32,8 +32,8 @@ impl Service {
         }
     }
 
-    pub async fn get_user_by_id(&self, user_id: i32) -> Result<Option<User>, UserError> {
-        self.repository.get_user_by_id(user_id).await
+    pub async fn get_user_by_id(&self, user_id: i32) -> Result<Option<User>, ApiError> {
+        Ok(self.repository.get_user_by_id(user_id).await?)
     }
 
     pub async fn get_user_by_customer_id(
@@ -43,7 +43,7 @@ impl Service {
         self.repository.get_user_by_customer_id(customer_id).await
     }
 
-    pub async fn update_user(&self, user: &User) -> Result<User, UserError> {
-        self.repository.update_user(user).await
+    pub async fn update_user(&self, user: &User) -> Result<User, ApiError> {
+        Ok(self.repository.update_user(user).await?)
     }
 }

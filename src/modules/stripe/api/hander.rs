@@ -1,18 +1,15 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
-use serde::{Deserialize, Serialize};
-use stripe::{CheckoutSession, EventObject, EventType, Webhook, WebhookError};
+use stripe::{EventObject, EventType, Webhook};
 
 use crate::{
-    modules::{
-        auth::Claims,
-        stripe::{PaymentError, Service},
-    },
+    error::ApiError,
+    modules::{auth::Claims, stripe::Service},
     utils::Config,
 };
 
-pub async fn get_products(service: web::Data<Arc<Service>>) -> Result<HttpResponse, PaymentError> {
+pub async fn get_products(service: web::Data<Arc<Service>>) -> Result<HttpResponse, ApiError> {
     let products = service.get_all_products().await?;
     Ok(HttpResponse::Ok().json(products))
 }
@@ -20,7 +17,8 @@ pub async fn get_products(service: web::Data<Arc<Service>>) -> Result<HttpRespon
 pub async fn get_checkout(
     req: HttpRequest,
     service: web::Data<Arc<Service>>,
-) -> Result<HttpResponse, PaymentError> {
+) -> Result<HttpResponse, ApiError> {
+    //The middleware will take care if the claim is not present
     if let Some(claims) = req.extensions().get::<Claims>() {
         let user_id = claims.sub;
 
@@ -30,7 +28,7 @@ pub async fn get_checkout(
 
         Ok(HttpResponse::Ok().json(url))
     } else {
-        Err(PaymentError::AuthorizationFailed)
+        Err(ApiError::InternalServerError)
     }
 }
 
@@ -47,7 +45,7 @@ pub async fn handle_webhook(
     req: HttpRequest,
     service: web::Data<Arc<Service>>,
     payload: web::Bytes,
-) -> Result<(), PaymentError> {
+) -> Result<(), ApiError> {
     let config = Config::from_env();
     let payload_str = std::str::from_utf8(payload.borrow()).unwrap();
 

@@ -9,6 +9,7 @@ use serde_json::Value;
 use std::sync::Arc;
 
 use crate::{
+    error::ApiError,
     modules::{
         auth::{
             create_jwt, provider::OAuthProvider, AuthError, OAuthData, OAuthProviderType,
@@ -118,7 +119,7 @@ impl OAuthProvider for Provider {
         (auth_url.to_string(), csrf_state)
     }
 
-    async fn handle_oauth_callback(&self, code: String) -> Result<OAuthResponse, AuthError> {
+    async fn handle_oauth_callback(&self, code: String) -> Result<OAuthResponse, ApiError> {
         let token_response = self.exchange_token(code).await?;
         let user_info = self
             .fetch_google_user_info(token_response.access_token().secret())

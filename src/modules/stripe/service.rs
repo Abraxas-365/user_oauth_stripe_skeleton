@@ -7,6 +7,7 @@ use stripe::{
 };
 
 use crate::{
+    error::ApiError,
     modules::user::{self, User, UserError},
     utils::Config,
 };
@@ -35,18 +36,18 @@ impl Service {
 
 //Product stripe
 impl Service {
-    pub async fn get_product(&self, product_id: &str) -> Result<Product, PaymentError> {
+    pub async fn get_product(&self, product_id: &str) -> Result<Product, ApiError> {
         let product_id = product_id.parse::<ProductId>()?;
         let product = Product::retrieve(&self.stripe_client, &product_id, &[]).await?;
         Ok(product)
     }
 
-    pub async fn get_all_products(&self) -> Result<Vec<Product>, PaymentError> {
+    pub async fn get_all_products(&self) -> Result<Vec<Product>, ApiError> {
         let products = Product::list(&self.stripe_client, &Default::default()).await?;
         Ok(products.data)
     }
 
-    pub async fn get_product_price(&self, product_id: &str) -> Result<Price, PaymentError> {
+    pub async fn get_product_price(&self, product_id: &str) -> Result<Price, ApiError> {
         let product_id = product_id.parse::<ProductId>()?;
         let price = stripe::Price::list(
             &self.stripe_client,
@@ -60,19 +61,19 @@ impl Service {
         .await?
         .data
         .pop()
-        .ok_or(PaymentError::NotFound)?;
+        .ok_or(PaymentError::PaymentNotFound)?;
         Ok(price)
     }
 }
 
 //Customer stripe
 impl Service {
-    pub async fn get_customer(&self, user: &User) -> Result<Customer, PaymentError> {
+    pub async fn get_customer(&self, user: &User) -> Result<Customer, ApiError> {
         if let Some(stripe_customer_id) = &user.stripe_customer_id {
             let stripe_customer_id = stripe_customer_id.parse::<CustomerId>()?;
             let customer = Customer::retrieve(&self.stripe_client, &stripe_customer_id, &[])
                 .await
-                .map_err(|_| PaymentError::NotFound)?;
+                .map_err(|_| PaymentError::PaymentNotFound)?;
             return Ok(customer);
         }
 
@@ -108,12 +109,12 @@ impl Service {
         &self,
         user_id: i32,
         product_id: &str,
-    ) -> Result<String, PaymentError> {
+    ) -> Result<String, ApiError> {
         let user = self
             .user_service
             .get_user_by_id(user_id)
             .await?
-            .ok_or(UserError::NotFound)?;
+            .ok_or(UserError::UserNotFound)?;
 
         let customer = self.get_customer(&user).await?;
 
@@ -135,15 +136,15 @@ impl Service {
             CheckoutSession::create(&self.stripe_client, params).await?
         };
 
-        checkout_session
+        Ok(checkout_session
             .url
-            .ok_or(PaymentError::CreateCheckoutError)
+            .ok_or(PaymentError::CreateCheckoutError)?)
     }
 
     pub async fn get_checkout_session_by_id(
         &self,
         session_id: &str,
-    ) -> Result<CheckoutSession, PaymentError> {
+    ) -> Result<CheckoutSession, ApiError> {
         let session_id = session_id.parse::<stripe::CheckoutSessionId>()?;
         let session = CheckoutSession::retrieve(
             &self.stripe_client,
@@ -161,7 +162,7 @@ impl Service {
 
 //Payment
 impl Service {
-    pub async fn create_payment(&self, checkout_session_id: &str) -> Result<(), PaymentError> {
+    pub async fn create_payment(&self, checkout_session_id: &str) -> Result<(), ApiError> {
         let checkout_session = self.get_checkout_session_by_id(checkout_session_id).await?;
 
         let payment_intent = checkout_session
@@ -194,7 +195,7 @@ impl Service {
             .user_service
             .get_user_by_customer_id(&customer_id)
             .await?
-            .ok_or(UserError::NotFound)?;
+            .ok_or(UserError::UserNotFound)?;
 
         let pament = Payment::new(user.id, payment_intent.as_str(), product_id.as_str());
 
@@ -207,7 +208,7 @@ impl Service {
         &self,
         checkout_session_id: &str,
         status: PaymentStatus,
-    ) -> Result<(), PaymentError> {
+    ) -> Result<(), ApiError> {
         let checkout_session = self.get_checkout_session_by_id(checkout_session_id).await?;
 
         let payment_intent = checkout_session
