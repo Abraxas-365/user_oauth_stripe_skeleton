@@ -91,6 +91,13 @@ impl Service {
         )
         .await?;
 
+        //save user with new customer id
+        let updated_user = User {
+            stripe_customer_id: Some(customer.id.to_string()),
+            ..user.clone()
+        };
+        self.user_service.update_user(&updated_user).await?;
+
         Ok(customer)
     }
 
