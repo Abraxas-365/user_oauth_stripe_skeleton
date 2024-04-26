@@ -50,6 +50,7 @@ async fn main() -> std::io::Result<()> {
             .configure(stripe_payments::api::config)
             .configure(subscription::api::config)
             .app_data(web::Data::new(payment_service.clone()))
+            .app_data(web::Data::new(subscription_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
             .app_data(web::Data::new(
                 oauth_google.clone() as Arc<dyn OAuthProvider>

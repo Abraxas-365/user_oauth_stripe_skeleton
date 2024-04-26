@@ -22,8 +22,7 @@ CREATE TABLE user_subscription (
     subscription_date TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc'),
     is_active BOOLEAN DEFAULT TRUE,
     PRIMARY KEY (user_id, stripe_product_id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (stripe_product_id) REFERENCES products(stripe_product_id) -- Assumes a table 'products' exists
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Define enum type for payment status
