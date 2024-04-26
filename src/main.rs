@@ -46,6 +46,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .wrap(Logger::default())
             .configure(auth::api::config)
+            .configure(user::api::config)
             .configure(stripe_payments::api::config)
             .configure(subscription::api::config)
             .app_data(web::Data::new(payment_service.clone()))

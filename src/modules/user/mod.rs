@@ -5,3 +5,5 @@ mod domain;
 pub use domain::*;
 
 pub mod infrastructure;
+
+pub mod api;
