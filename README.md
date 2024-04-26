@@ -27,33 +27,57 @@ Before starting the service, configure the environmental variables by creating a
 - `GOOGLE_REDIRECT_URI`: The redirect URI set in your Google app
 - `DATABASE_URL`: Your PostgreSQL database URL
 
+- `STRIPE_SECRET`: 1234
+- `STRIPE_CHECKOUT_CANCEL_URL`: https://1234.com
+- `STRIPE_CHECKOUT_SUCCESS_URL`: https://1234.com
+- `STRIPE_WEBHOOK_SECRET`: 1234
+- `JWT_SECRET`: your-secret-key
+
 ## Database Setup
 
 This service uses PostgreSQL. Run the SQL commands below to set up the required tables:
 
 ```sql
 -- Create the 'users' table
+-- If you need to add more information you should create another table
+-- This is just the core for the skeleton to work
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
     image_url TEXT,
     oauth_provider VARCHAR(255) NOT NULL,
     oauth_id VARCHAR(255) NOT NULL,
+    stripe_customer_id VARCHAR(255),
     oauth_refresh_token TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc')
+);
+
+
+-- Creating a junction table for users and stripe products
+CREATE TABLE user_subscription (
+    user_id INTEGER NOT NULL,
+    stripe_product_id VARCHAR(255) NOT NULL,
+    stripe_payment_id VARCHAR(255) NOT NULL,
+    subscription_date TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc'),
+    is_active BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (user_id, stripe_product_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (stripe_product_id) REFERENCES products(stripe_product_id) -- Assumes a table 'products' exists
 );
 
 -- Define enum type for payment status
 CREATE TYPE payment_status AS ENUM ('pending', 'successful', 'failed', 'denied');
 
--- Create the 'payments' table
 CREATE TABLE payments (
     stripe_payment_id VARCHAR(255) NOT NULL PRIMARY KEY,
     user_id INTEGER NOT NULL,
+    stripe_product_id VARCHAR(255) NOT NULL,
     payment_date TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc'),
-    payment_status payment_status DEFAULT 'pending',
+    payment_status payment_status DEFAULT 'pending', -- using the enum type for payment status
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
 ```
 
 ## Running the Service
@@ -79,10 +103,19 @@ docker compose up
 - GET /auth/redirect: Redirects to Google OAuth.
 - GET /auth/callback: Callback endpoint for Google OAuth.
 
-### Payments
+### Stripe
 
-- POST /payments/create: Endpoint to create a payment.
-- POST /payments/status: Update payment status.
+- POST /stripe/checkout: Endpoint to create a checkout.
+- GET /stripe/products: Get stripe products
+- POST /stripe/webhook: The weebhook stripe uses
+
+### Subscription
+
+- GET /subscription/{user-id}: Get the subscription of a user
+
+### User
+
+- GET /user: Get User information
 
 ## cURL Requests
 
@@ -94,34 +127,39 @@ Below are the cURL commands to interact with the API endpoints defined in the ap
 
 ```bash
 # This endpoint is typically accessed directly via a browser to handle redirects properly.
-curl -X GET "http://localhost:8080/auth/redirect"
-```
-
-#### OAuth Callback (Example cURL, actual usage via browser after redirect):
-
-```bash
-# Example cURL for callback mechanism, note: the 'code' parameter will be provided by the OAuth provider.
-curl -X GET "http://localhost:8080/auth/callback?code=AUTHORIZATION_CODE_HERE"
+curl -X GET "http://localhost:80/auth/redirect"
 ```
 
 ### Stripe Payments
 
-#### Create Payment:
+#### Create Chekout:
 
 ```bash
-curl -X POST "http://localhost:8080/payments/create" \
+curl -X POST "http://localhost:80/stripe/checkout?product_id={product_id}" \
      -H "Content-Type: application/json" \
-     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-     -d '{"stripe_payment_id": "your_stripe_payment_id"}'
+     -H "Authorization: Bearer <token>"
 ```
 
-#### Update Payment Status:
+#### Get Products:
 
 ```bash
-curl -X POST "http://localhost:8080/payments/status" \
+ curl -X GET http://localhost:80/stripe/products \
+     -H "Content-Type: application/json"
+```
+
+#### Get User Subscription:
+
+```bash
+curl -X GET http://localhost:80/subscription/{user_id} \
+     -H "Content-Type: application/json"
+```
+
+### Get User
+
+```bash
+curl -X GET http://localhost:80/user \
      -H "Content-Type: application/json" \
-     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-     -d '{"stripe_payment_id": "your_stripe_payment_id", "new_status": "successful"}'
+     -H "Authorization: Bearer <token>"
 ```
 
 ## Middleware
